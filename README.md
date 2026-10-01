@@ -19,6 +19,7 @@
 ```sh
 cargo build --locked --release
 cargo test --locked
+python3 -m unittest discover -s tests -p test_launchd_templates.py
 cargo clippy --locked --all-targets -- -D warnings
 ```
 
@@ -44,7 +45,15 @@ cargo clippy --locked --all-targets -- -D warnings
 ./target/release/ssh-stream-gateway serve --config /ABSOLUTE/PATH/server.toml
 ```
 
-`check-config` 检查配置语法、安全参数和白名单格式，不测试证书/密钥是否可用，也不登录 SSH。`serve` 当前为前台进程。自动启动/launchd 部署需在确认安装路径、身份、网络范围后单独设置。Ctrl-C/SIGTERM 会停止接收连接并清理本地 SSH 子进程。
+`check-config` 检查配置语法、安全参数和白名单格式，不测试证书/密钥是否可用，也不登录 SSH。`serve` 始终保持前台运行，适合由 macOS launchd 管理；登录后自动启动的 LaunchAgent 模板与安装/停止步骤见 [macOS 服务说明](docs/MACOS-SERVICE.md)。模板不自动安装，也不会修改 WG 或防火墙。Ctrl-C/SIGTERM 在等待地址和正常服务时都可退出；正常服务退出还会清理本地 SSH 子进程。
+
+### 等待 WireGuard 地址
+
+配置与 TLS 先通过检查，再绑定精确的 `bind` IP/端口。如果 OS 返回地址尚不可用（EADDRNOTAVAIL），进程按 1、2、4、8、16、30 秒退避，之后每 30 秒重试，直到地址出现或收到停止信号。不会改绑 `0.0.0.0`、其他接口或其他端口。首次等待打印一条提示，之后每分钟最多一条，避免 WG 延迟启动造成日志洪泛。IP 填错也会保持等待，需由你核对配置。
+
+端口占用、权限错误、无效配置和 TLS 错误不会进入上述重试，会直接以非零状态退出。LaunchAgent 使用 `KeepAlive.SuccessfulExit=false` 与 `ThrottleInterval=60`，覆盖异常退出和 Rust panic；因此持续配置错误也会由 launchd 按受节流的频率重新尝试，直到修复或卸载该服务。请先检查配置和前台启动，发现反复错误时先停止服务再排查。干净退出返回 0，不触发此异常重启条件。
+
+监听建立后的连接中断不会重放 SSH 命令，也不自动修改或重建 WG；网络恢复依赖你已有的 WG 配置。
 
 ## 云端客户端
 
@@ -93,6 +102,6 @@ HTTPS endpoint 使用 `HTTPS_PROXY`/`https_proxy`，缺省时使用 `ALL_PROXY`/
 
 ## 验证
 
-测试只使用 loopback、临时 TLS 测试证书/固定测试口令、假 SSH 子进程和系统 `ssh -G` 参数解析，不访问真实 SSH 服务器。覆盖认证与白名单先于 spawn、默认身份回退防护、二进制 EOF、stdout/stderr、早退出、断连/取消清理、背压、并发/超时、TLS/证书/h2、HTTP(S) CONNECT 与代理配置。CI 在 Linux/macOS 上运行测试和 release 构建；实际 Mac SSH 身份、证书及 WG 连通性仍需部署时验收。
+测试只使用 loopback、临时 TLS 测试证书/固定测试口令、假 SSH 子进程和系统 `ssh -G` 参数解析，不访问真实 SSH 服务器。另有模拟地址延迟出现的退避/日志限频/取消测试和真实进程的 SIGTERM/SIGINT、端口占用、缺失 TLS 材料启动测试。覆盖认证与白名单先于 spawn、默认身份回退防护、二进制 EOF、stdout/stderr、早退出、断连/取消清理、背压、并发/超时、TLS/证书/h2、HTTP(S) CONNECT 与代理配置。CI 在 Linux/macOS 上运行测试和 release 构建；实际 Mac SSH 身份、证书及 WG 连通性仍需部署时验收。
 
 协议细节见 [PROTOCOL.md](PROTOCOL.md)。

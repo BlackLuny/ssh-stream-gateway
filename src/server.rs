@@ -22,7 +22,6 @@ use std::{
 };
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWriteExt},
-    net::TcpListener,
     process::Child,
     sync::{Semaphore, mpsc, watch},
     time::{Instant, timeout},
@@ -299,6 +298,22 @@ async fn run_session<R: AsyncRead + Unpin>(
 }
 
 pub async fn serve(config: Config) -> Result<()> {
+    // Register both handlers before attempting bind: WG may appear much later.
+    let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    let mut interrupt = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())?;
+    let shutdown = CancellationToken::new();
+    let result = serve_until(config, shutdown.clone());
+    tokio::pin!(result);
+    tokio::select! {
+        result = &mut result => result,
+        _ = term.recv() => { shutdown.cancel(); result.await },
+        _ = interrupt.recv() => { shutdown.cancel(); result.await },
+    }
+}
+
+async fn serve_until(config: Config, shutdown: CancellationToken) -> Result<()> {
+    // Also cancel active sessions when an unexpected accept/configuration error exits.
+    let _cancel_on_exit = shutdown.clone().drop_guard();
     config.validate()?;
     let certs = CertificateDer::pem_file_iter(&config.tls_cert)
         .context("read TLS certificate")?
@@ -311,22 +326,22 @@ pub async fn serve(config: Config) -> Result<()> {
         .context("configure server TLS")?;
     tls.alpn_protocols = vec![b"h2".to_vec()];
     let acceptor = TlsAcceptor::from(Arc::new(tls));
-    let listener = TcpListener::bind(config.bind)
+    let Some(listener) = crate::listener::bind(config.bind, &shutdown)
         .await
-        .context("bind gateway listener")?;
+        .context("bind configured gateway listener")?
+    else {
+        return Ok(());
+    };
     eprintln!(
         "SSH streaming gateway listening on https://{} (HTTP/2)",
         listener.local_addr()?
     );
-    let shutdown = CancellationToken::new();
     let state = State::new(config, shutdown.clone());
     let connections = Arc::new(Semaphore::new(32));
     let mut tasks = tokio::task::JoinSet::new();
-    let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
     loop {
         tokio::select! {
-            _=tokio::signal::ctrl_c()=>break,
-            _=term.recv()=>break,
+            _=shutdown.cancelled()=>break,
             Some(_)=tasks.join_next()=>{},
             incoming=listener.accept()=>{
                 let (socket,_)=incoming?;

@@ -1,5 +1,7 @@
 # PLACEHOLDERS ONLY. Copy outside the repository and replace before use.
 # Bind an explicit WireGuard/private address for a remote client; never 0.0.0.0.
+# If the exact address is not present yet, wait with capped backoff until it appears.
+# Port-in-use / permission / configuration / TLS errors still fail immediately.
 bind = "127.0.0.1:8443"
 tls_cert = "/Users/YOUR_USER/.config/ssh-stream-gateway/server.crt"
 tls_key = "/Users/YOUR_USER/.config/ssh-stream-gateway/server.key"

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- TEMPLATE ONLY. Replace both absolute paths before installing.
+         Install as the current GUI user; do not add UserName or use sudo.
+         See docs/MACOS-SERVICE.md for validation, setup, and recovery. -->
+    <key>Label</key>
+    <string>com.example.ssh-stream-gateway.agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/ABSOLUTE/PATH/TO/ssh-stream-gateway</string>
+        <string>serve</string>
+        <string>--config</string>
+        <string>/ABSOLUTE/PATH/TO/private/server.toml</string>
+    </array>
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <!-- Restart after unsuccessful exits, throttled below. Persistent config
+         errors also retry; unload the job and fix them rather than waiting. -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+    <key>ExitTimeOut</key>
+    <integer>45</integer>
+    <!-- Decimal 63 is octal 077. This does not fix existing file permissions. -->
+    <key>Umask</key>
+    <integer>63</integer>
+    <!-- No unattended log file growth; use the documented foreground
+         diagnostic procedure, or configure protected, rotated logs locally. -->
+    <key>StandardInPath</key>
+    <string>/dev/null</string>
+    <key>StandardOutPath</key>
+    <string>/dev/null</string>
+    <key>StandardErrorPath</key>
+    <string>/dev/null</string>
+</dict>
+</plist>
