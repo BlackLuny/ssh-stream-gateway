@@ -1,0 +1,7 @@
+# PLACEHOLDERS ONLY. This file never contains the actual passphrase or SSH key.
+endpoint = "https://gateway.example.invalid:8443"
+# Optional: omit ca when the endpoint uses a certificate trusted by the OS.
+ca = "/ABSOLUTE/PATH/TO/ssh-stream-gateway/ca.pem"
+# Optional: omit password_file to type the passphrase in a non-echoing TTY prompt.
+# Keep this separate file outside the repository, owned by you and mode 0600.
+password_file = "/ABSOLUTE/PATH/TO/ssh-stream-gateway/password"

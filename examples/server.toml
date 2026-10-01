@@ -1,0 +1,19 @@
+# PLACEHOLDERS ONLY. Copy outside the repository and replace before use.
+# Bind an explicit WireGuard/private address for a remote client; never 0.0.0.0.
+bind = "127.0.0.1:8443"
+tls_cert = "/Users/YOUR_USER/.config/ssh-stream-gateway/server.crt"
+tls_key = "/Users/YOUR_USER/.config/ssh-stream-gateway/server.key"
+# Run `ssh-stream-gateway hash-password` locally; paste its Argon2id output here.
+password_hash = "REPLACE_WITH_ARGON2ID_PHC_FROM_HASH_PASSWORD"
+max_sessions = 4
+session_seconds = 3600
+idle_seconds = 300
+
+[targets.build]
+host = "server.example.invalid"
+port = 22
+user = "remote_user"
+identity_file = "/Users/YOUR_USER/.ssh/SELECTED_IDENTITY"
+known_hosts_file = "/Users/YOUR_USER/.config/ssh-stream-gateway/known_hosts"
+# Optional explicit agent socket for an ALREADY unlocked encrypted identity.
+# identity_agent = "/ABSOLUTE/PATH/TO/SELECTED/AGENT.sock"

@@ -1,0 +1,14 @@
+/target/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+.env
+.env.*
+/server.toml
+/client.toml
+/password
+/password.txt
+/private/
+.DS_Store
