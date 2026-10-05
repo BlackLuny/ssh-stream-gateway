@@ -1,0 +1,8 @@
+.private/
+__pycache__/
+ssh-stream-gateway
+*.log
+*.pem
+*.key
+*.crt
+.env*

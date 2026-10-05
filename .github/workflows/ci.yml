@@ -21,6 +21,12 @@ jobs:
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
       - run: python3 -m unittest discover -s tests -p test_launchd_templates.py
+      - name: Test Linux client recovery helpers
+        if: runner.os == 'Linux'
+        working-directory: tools/client-recovery
+        run: |
+          python3 -m unittest -v test_restore
+          python3 -O -m unittest -v test_restore
       - run: cargo build --locked --release
       - name: Package tested binary
         run: |
