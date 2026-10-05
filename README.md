@@ -105,3 +105,7 @@ HTTPS endpoint 使用 `HTTPS_PROXY`/`https_proxy`，缺省时使用 `ALL_PROXY`/
 测试只使用 loopback、临时 TLS 测试证书/固定测试口令、假 SSH 子进程和系统 `ssh -G` 参数解析，不访问真实 SSH 服务器。另有模拟地址延迟出现的退避/日志限频/取消测试和真实进程的 SIGTERM/SIGINT、端口占用、缺失 TLS 材料启动测试。覆盖认证与白名单先于 spawn、默认身份回退防护、二进制 EOF、stdout/stderr、早退出、断连/取消清理、背压、并发/超时、TLS/证书/h2、HTTP(S) CONNECT 与代理配置。CI 在 Linux/macOS 上运行测试和 release 构建；实际 Mac SSH 身份、证书及 WG 连通性仍需部署时验收。
 
 协议细节见 [PROTOCOL.md](PROTOCOL.md)。
+
+## 可复用的 Linux 客户端恢复工具
+
+可选的 [客户端安装与恢复 helpers](tools/client-recovery/README.md) 提供固定目标、校验和验证、交互式口令恢复和安全错误分类。示例只含占位配置，凭据目录和已构建二进制不进入仓库。

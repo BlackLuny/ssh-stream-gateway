@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Execute one quoted remote command using user-restored existing credentials."""
+import os
+import resource
+import stat
+import sys
+
+from gateway_common import (AUTH_DIR, PASSWORD_NAME, argv, client_environment,
+                            private_directory, verified_binary_fd)
+
+
+def main():
+    if len(sys.argv) != 2 or not sys.argv[1] or "\0" in sys.argv[1] or len(sys.argv[1].encode()) > 8192:
+        raise RuntimeError("Usage: gateway-exec 'one remote command string'; endpoint and target alias are fixed")
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    directory_fd = private_directory()
+    try:
+        st = os.stat(PASSWORD_NAME, dir_fd=directory_fd, follow_symlinks=False)
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid() or stat.S_IMODE(st.st_mode) != 0o600:
+            raise RuntimeError("Authentication file must be regular, owned by you, and mode 0600")
+    finally:
+        os.close(directory_fd)
+    binary_fd = verified_binary_fd()
+    os.set_inheritable(binary_fd, True)
+    os.execve(f"/proc/self/fd/{binary_fd}", argv(AUTH_DIR / PASSWORD_NAME, sys.argv[1]), client_environment())
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, RuntimeError) as exc:
+        print(f"Gateway stopped: {exc}", file=sys.stderr)
+        raise SystemExit(125)
